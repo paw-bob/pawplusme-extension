@@ -1,0 +1,16 @@
+{
+  "name": "pawplusme-extension",
+  "version": "0.6.10",
+  "private": true,
+  "description": "An open-source Chrome companion for custom pets made with PawPlusMe.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {"node": ">=22"},
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "build:dev": "node scripts/build.mjs --dev",
+    "pretest": "npm run build",
+    "test": "node scripts/test.mjs",
+    "check": "node scripts/check.mjs"
+  }
+}

@@ -1,0 +1,46 @@
+name: Check and build
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - name: Ensure build inputs stay unchanged
+        run: git diff --exit-code
+      - name: Upload verified release files
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.os }}
+          path: |
+            dist/*.zip
+            dist/release.json
+            dist/SHA256SUMS
+          retention-days: 7
+  compare-platforms:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: artifacts
+      - name: Require byte-identical Linux and Windows release hashes
+        run: node --input-type=module -e "import fs from 'node:fs';import assert from 'node:assert/strict';const linux=fs.readFileSync('artifacts/release-ubuntu-latest/SHA256SUMS');const windows=fs.readFileSync('artifacts/release-windows-latest/SHA256SUMS');assert.deepEqual(linux,windows);console.log('Linux and Windows release hashes match.');"

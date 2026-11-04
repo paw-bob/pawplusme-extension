@@ -1,0 +1,10 @@
+name: Feature request
+description: Suggest a focused improvement to the browser companion.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like to do?
+      description: Describe the concrete use case and the desired behavior.
+    validations:
+      required: true

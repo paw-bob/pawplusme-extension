@@ -1,0 +1,21 @@
+name: Bug report
+description: Report a reproducible extension problem.
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Extension and Chrome versions
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include expected and actual behavior. Remove private links, credentials and photographs.
+    validations:
+      required: true
+  - type: textarea
+    id: checks
+    attributes:
+      label: Relevant screenshots or console errors
+      description: Use only data you are authorized to share.

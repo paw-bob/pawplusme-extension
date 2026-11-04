@@ -1,0 +1,30 @@
+name: Draft GitHub release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Verify tag matches the package version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: node --input-type=module -e "import fs from 'node:fs';if(process.env.RELEASE_TAG!=='v'+JSON.parse(fs.readFileSync('package.json')).version)throw new Error('Tag and package version differ');"
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - run: git diff --exit-code
+      - name: Create a draft release with verified artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create "$RELEASE_TAG" dist/*.zip dist/release.json dist/SHA256SUMS --draft --verify-tag --generate-notes
