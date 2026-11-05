@@ -151,3 +151,27 @@ test('menu placement stays inside narrow viewport edges and destruction removes 
     s.hover();assert.equal(s.shown(),false);
   }
 });
+
+
+test('closing a caught reminder dismisses the panel without choosing or changing the timer',()=>{
+  const s=fixture(),state={phase:'caught',cycle:9,dueAt:0,quietUntil:0};
+  s.app.setFocusState(state);assert.equal(s.app.focusPanel.style.display,'block');
+  assert.equal(s.app.focusClose.getAttribute('aria-label'),'关闭');
+  s.fire(s.app.focusClose,'click',{target:s.app.focusClose});
+  assert.equal(s.app.focusPanel.style.display,'none');assert.equal(s.app.focusState,state);
+  assert.deepEqual(s.focusEvents,[]);assert.equal(s.document.activeElement,s.app.canvas);
+  for(let i=0;i<5;i++){s.app.setFocusState({...state});s.app.syncVisibility();}
+  s.document.focused=false;s.fire('window','blur');s.document.focused=true;s.fire('window','focus');
+  assert.equal(s.app.focusPanel.style.display,'none','clock and visibility refresh must not reopen a dismissed round');
+  assert.deepEqual(s.focusEvents,[]);
+});
+
+test('a later reminder round opens normally after the previous panel was closed',async()=>{
+  const s=fixture();s.app.setFocusState({phase:'caught',cycle:9});
+  s.fire(s.app.focusClose,'click',{target:s.app.focusClose});
+  s.app.setFocusState({phase:'waiting',cycle:10});
+  s.app.setFocusState({phase:'mischief',cycle:10});s.app.setFocusState({phase:'caught',cycle:10});
+  assert.equal(s.app.focusPanel.style.display,'block');assert.equal(s.document.activeElement,s.app.focusButtons[0]);
+  await Promise.all(s.fire(s.app.focusButtons[0],'click',{target:s.app.focusButtons[0]}).results);
+  assert.deepEqual(s.focusEvents,[{type:'later25',cycle:10}]);
+});

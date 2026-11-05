@@ -27,4 +27,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: gh release create "$RELEASE_TAG" dist/*.zip dist/release.json dist/SHA256SUMS --draft --verify-tag --generate-notes
+        run: node scripts/release.mjs

@@ -175,7 +175,7 @@
       this.focusPanel=document.createElement('div');this.focusPanel.dataset.petFocusPanel='';
       Object.assign(this.focusPanel.style,{position:'fixed',zIndex:'2147483647',display:'none',width:'280px',maxWidth:'calc(100vw - 24px)',pointerEvents:'auto',contain:'layout style'});
       const shadow=this.focusPanel.attachShadow({mode:'open'}),style=document.createElement('style');
-      style.textContent=':host{font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;color:#4c1c30}*{box-sizing:border-box}.panel{background:#fffdfd;border:1px solid #efd7e1;border-radius:12px;padding:17px}h2{font-size:17px;font-weight:600;line-height:1.4;margin:0 0 5px}p{font-size:12px;color:#805f6d;margin:0 0 13px}button{display:block;width:100%;min-height:42px;margin:7px 0 0;padding:8px 12px;border:1px solid #efd7e1;border-radius:7px;background:#fff7fa;color:#7d2047;font:inherit;text-align:left;cursor:pointer}button:first-of-type{background:#7d2047;border-color:#7d2047;color:#fffdf2}button:hover{filter:brightness(.96)}button:focus-visible{outline:3px solid #b83268;outline-offset:2px}button:disabled{opacity:.5;cursor:wait}::selection{background:#fbd8e6;color:#4c1c30}';
+      style.textContent=':host{font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;color:#4c1c30}*{box-sizing:border-box}.panel{position:relative;background:#fffdfd;border:1px solid #efd7e1;border-radius:12px;padding:17px}h2{padding-right:32px;font-size:17px;font-weight:600;line-height:1.4;margin:0 0 5px}p{font-size:12px;color:#805f6d;margin:0 0 13px}button{display:block;width:100%;min-height:42px;margin:7px 0 0;padding:8px 12px;border:1px solid #efd7e1;border-radius:7px;background:#fff7fa;color:#7d2047;font:inherit;text-align:left;cursor:pointer}button:first-of-type{background:#7d2047;border-color:#7d2047;color:#fffdf2}button:hover{filter:brightness(.96)}button:focus-visible{outline:3px solid #b83268;outline-offset:2px}button:disabled{opacity:.5;cursor:wait}.panel-close{position:absolute;top:3px;right:3px;display:grid;place-items:center;width:44px;height:44px;min-height:44px;margin:0;padding:0;border:0;background:transparent;color:#7d2047;font-size:24px;line-height:1;text-align:center}.panel-close:hover{background:#fff0f5}::selection{background:#fbd8e6;color:#4c1c30}';
       this.focusDialog=document.createElement('section');this.focusDialog.className='panel';this.focusDialog.setAttribute('role','dialog');this.focusDialog.setAttribute('aria-labelledby','pet-focus-title');
       const title=this.focusTitle=document.createElement('h2');title.id='pet-focus-title';title.textContent=t('抓住啦，休息一下？');
       const copy=this.focusCopy=document.createElement('p');copy.textContent=t('下一次，什么时候再来找你？');this.focusDialog.append(title,copy);
@@ -186,6 +186,9 @@
         button.addEventListener('click',async()=>{this.focusButtons.forEach(b=>b.disabled=true);try{await this.onFocusChoice({type,cycle:this.focusState.cycle});}finally{this.focusButtons.forEach(b=>b.disabled=false);}},{signal:this.abort.signal});
         this.focusButtons.push(button);this.focusDialog.append(button);
       }
+      const close=this.focusClose=document.createElement('button');close.type='button';close.className='panel-close';close.textContent='×';close.setAttribute('aria-label',t('关闭'));
+      close.addEventListener('click',()=>{this.focusPanelDismissed=true;this.syncVisibility();this.canvas.focus({preventScroll:true});},{signal:this.abort.signal});
+      this.focusDialog.append(close);
       shadow.append(style,this.focusDialog);document.documentElement.append(this.focusPanel);
     }
     localize(){
@@ -193,6 +196,7 @@
       this.canvas.setAttribute('aria-label',t(this.focusState.phase==='mischief'?'抓住宠物':'陪伴宠物，跟随时长按或按住Alt拖动'));
       if(this.focusTitle)this.focusTitle.textContent=t('抓住啦，休息一下？');
       if(this.focusCopy)this.focusCopy.textContent=t('下一次，什么时候再来找你？');
+      this.focusClose?.setAttribute('aria-label',t('关闭'));
       this.focusButtons?.forEach((button,index)=>{if(this.focusLabels?.[index])button.textContent=t(this.focusLabels[index]);});
       if(this.focusState.phase==='caught')this.positionFocusPanel();
     }
@@ -204,6 +208,7 @@
     }
     setFocusState(state){
       const previous=this.focusState;this.focusState=state||{phase:'off'};
+      if(this.focusState.phase!==previous.phase||this.focusState.cycle!==previous.cycle)this.focusPanelDismissed=false;
       if(this.focusState.phase!=='off')this.hideActionMenu();
       if(this.focusState.phase!==previous.phase)this.cancelDrag();
       if(this.focusState.phase==='mischief'&&(previous.phase!=='mischief'||previous.cycle!==state.cycle)){
@@ -218,13 +223,13 @@
       this.syncVisibility();
       if(this.focusState.phase==='caught'){
         this.positionFocusPanel();
-        if(previous.phase!=='caught'&&this.shown)this.focusButtons[0].focus({preventScroll:true});
+        if((previous.phase!=='caught'||previous.cycle!==this.focusState.cycle)&&this.shown&&!this.focusPanelDismissed)this.focusButtons[0].focus({preventScroll:true});
       }
     }
     syncVisibility(){
       const phase=this.focusState.phase;
       const show=this.visible&&!document.hidden&&!['waiting','quiet'].includes(phase)&&(phase==='off'||document.hasFocus());
-      this.root.style.display=show?'block':'none';this.focusPanel.style.display=show&&phase==='caught'?'block':'none';
+      this.root.style.display=show?'block':'none';this.focusPanel.style.display=show&&phase==='caught'&&!this.focusPanelDismissed?'block':'none';
       if(show&&!this.shown&&!this.paused){this.lastTime=performance.now();this.raf=requestAnimationFrame(t=>this.tick(t));}
       else if(!show){this.hideActionMenu();cancelAnimationFrame(this.raf);this.clearMischief();this.stopInput();}
       this.shown=show;if(!show){this.dragModifier=false;this.cancelDrag();}this.syncPointerEvents();if(show&&phase==='caught')this.positionFocusPanel();

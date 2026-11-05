@@ -1,5 +1,7 @@
 # PawPlusMe browser pet
 
+[![Check and build](https://github.com/paw-bob/pawplusme-extension/actions/workflows/ci.yml/badge.svg)](https://github.com/paw-bob/pawplusme-extension/actions/workflows/ci.yml)
+
 An animated companion for Chrome, made from your photo. It watches your pointer,
 follows you across ordinary web pages, naps, reacts to typing and brings a playful
 reminder when your focus timer ends.
@@ -7,6 +9,10 @@ reminder when your focus timer ends.
 **[Try the live demo or create your pet](https://www.pawplusme.com/?utm_source=github&utm_medium=referral&utm_campaign=opensource)** ·
 [How it works](https://www.pawplusme.com/how-it-works) ·
 [Pricing](https://www.pawplusme.com/pricing)
+
+**[Download v0.6.12](https://github.com/paw-bob/pawplusme-extension/releases/download/v0.6.12/pawplusme-extension-0.6.12.zip)** ·
+[Release notes](https://github.com/paw-bob/pawplusme-extension/releases/tag/v0.6.12) ·
+[Source code](https://github.com/paw-bob/pawplusme-extension)
 
 This repository contains the complete Manifest V3 extension and its shared
 animation runtime. Photo generation, checkout and the hosted website are separate
@@ -38,7 +44,7 @@ GitHub releases and Chrome Web Store publication are separate release channels.
 
 To load a GitHub release manually:
 
-1. Download `pawplusme-extension-<version>.zip` from this repository's Releases
+1. Download [pawplusme-extension-0.6.12.zip](https://github.com/paw-bob/pawplusme-extension/releases/download/v0.6.12/pawplusme-extension-0.6.12.zip)
    and extract it to a permanent folder.
 2. Open `chrome://extensions`, enable **Developer mode**, select **Load unpacked**
    and choose the extracted folder containing `manifest.json`.
@@ -117,6 +123,9 @@ checksums, the shared runtime bundle and a portable source bundle for consumers
 that build against their own website origin. Source tags, GitHub releases and
 Chrome Web Store releases should be matched explicitly; a GitHub release does not
 mean that Chrome Web Store review has completed.
+
+Browse [all GitHub releases](https://github.com/paw-bob/pawplusme-extension/releases)
+for versioned downloads and checksums.
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) for checks and pull requests, or
 [SECURITY.md](SECURITY.md) to report a vulnerability privately.
