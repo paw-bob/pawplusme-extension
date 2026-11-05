@@ -183,13 +183,24 @@
       this.focusLabels=['再过 25 分钟','再过 50 分钟','今天不要来了'];
       for(const [index,type]of ['later25','later50','today'].entries()){
         const button=document.createElement('button');button.type='button';button.textContent=t(this.focusLabels[index]);
-        button.addEventListener('click',async()=>{this.focusButtons.forEach(b=>b.disabled=true);try{await this.onFocusChoice({type,cycle:this.focusState.cycle});}finally{this.focusButtons.forEach(b=>b.disabled=false);}},{signal:this.abort.signal});
+        button.addEventListener('click',()=>this.chooseFocusAction(type),{signal:this.abort.signal});
         this.focusButtons.push(button);this.focusDialog.append(button);
       }
       const close=this.focusClose=document.createElement('button');close.type='button';close.className='panel-close';close.textContent='×';close.setAttribute('aria-label',t('关闭'));
-      close.addEventListener('click',()=>{this.focusPanelDismissed=true;this.syncVisibility();this.canvas.focus({preventScroll:true});},{signal:this.abort.signal});
+      close.addEventListener('click',()=>this.chooseFocusAction('stop'),{signal:this.abort.signal});
       this.focusDialog.append(close);
       shadow.append(style,this.focusDialog);document.documentElement.append(this.focusPanel);
+    }
+    async chooseFocusAction(type){
+      if(this.focusChoiceBusy||this.focusState.phase!=='caught')return;
+      this.focusChoiceBusy=true;
+      const buttons=[...this.focusButtons,this.focusClose];buttons.forEach(button=>button.disabled=true);
+      try{
+        await this.onFocusChoice({type,cycle:this.focusState.cycle});
+        if(this.focusState.phase==='off'){this.canvas.focus({preventScroll:true});this.hideActionMenu();}
+      }catch{
+        this.focusCopy.textContent=t('操作未完成，请重试。');this.focusCopy.setAttribute('role','alert');
+      }finally{this.focusChoiceBusy=false;buttons.forEach(button=>button.disabled=false);}
     }
     localize(){
       this.renderActionMenu();
@@ -208,7 +219,7 @@
     }
     setFocusState(state){
       const previous=this.focusState;this.focusState=state||{phase:'off'};
-      if(this.focusState.phase!==previous.phase||this.focusState.cycle!==previous.cycle)this.focusPanelDismissed=false;
+      if(this.focusCopy&&(this.focusState.phase!==previous.phase||this.focusState.cycle!==previous.cycle)){this.focusCopy.textContent=t('下一次，什么时候再来找你？');this.focusCopy.setAttribute('role','status');}
       if(this.focusState.phase!=='off')this.hideActionMenu();
       if(this.focusState.phase!==previous.phase)this.cancelDrag();
       if(this.focusState.phase==='mischief'&&(previous.phase!=='mischief'||previous.cycle!==state.cycle)){
@@ -223,13 +234,13 @@
       this.syncVisibility();
       if(this.focusState.phase==='caught'){
         this.positionFocusPanel();
-        if((previous.phase!=='caught'||previous.cycle!==this.focusState.cycle)&&this.shown&&!this.focusPanelDismissed)this.focusButtons[0].focus({preventScroll:true});
+        if((previous.phase!=='caught'||previous.cycle!==this.focusState.cycle)&&this.shown)this.focusButtons[0].focus({preventScroll:true});
       }
     }
     syncVisibility(){
       const phase=this.focusState.phase;
       const show=this.visible&&!document.hidden&&!['waiting','quiet'].includes(phase)&&(phase==='off'||document.hasFocus());
-      this.root.style.display=show?'block':'none';this.focusPanel.style.display=show&&phase==='caught'&&!this.focusPanelDismissed?'block':'none';
+      this.root.style.display=show?'block':'none';this.focusPanel.style.display=show&&phase==='caught'?'block':'none';
       if(show&&!this.shown&&!this.paused){this.lastTime=performance.now();this.raf=requestAnimationFrame(t=>this.tick(t));}
       else if(!show){this.hideActionMenu();cancelAnimationFrame(this.raf);this.clearMischief();this.stopInput();}
       this.shown=show;if(!show){this.dragModifier=false;this.cancelDrag();}this.syncPointerEvents();if(show&&phase==='caught')this.positionFocusPanel();

@@ -56,6 +56,16 @@ test('today quiet survives restart, resumes next day, and display-off cancels ti
   await app.chrome.storage.local.set({enabled:false});await app.settled();assert.equal(store.focus.phase,'off');assert.equal(alarms.size,0);
 });
 
+test('dismissed caught rounds persist across worker restart and stale closes cannot cancel a newer timer',async()=>{
+  const clock={now:new Date(2026,10,2,12).getTime()},store={pet:{id:'test'},enabled:true},alarms=new Map();
+  let app=worker(store,alarms,clock);await app.settled();
+  const playing=await app.send('preview');await app.send('catch',playing.focus.cycle);
+  assert.equal((await app.send('stop',playing.focus.cycle)).focus.phase,'off');
+  app=worker(store,alarms,clock);await app.settled();assert.equal(store.focus.phase,'off');assert.equal(alarms.size,0);
+  clock.now+=1000;const started=await app.send('start');await app.send('stop',playing.focus.cycle);
+  assert.deepEqual(store.focus,structuredClone(started.focus));assert.equal(alarms.get('pet-focus-reminder').scheduledTime,started.focus.dueAt);
+});
+
 test('stopping no-more-today clears its alarm and prevents a stale alarm from recalling mischief',async()=>{
   const clock={now:new Date(2026,10,2,12).getTime()},store={pet:{id:'test'},enabled:true},alarms=new Map();
   let app=worker(store,alarms,clock);await app.settled();
