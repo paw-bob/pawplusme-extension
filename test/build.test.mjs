@@ -34,8 +34,10 @@ test('production release is deterministic, complete and does not modify source',
 
 test('development and preview configurations use one generated origin throughout',async t=>{
   const dir=await temporary(t);
-  for(const origin of [DEVELOPMENT_ORIGIN,'http://127.0.0.1:4391','http://localhost:4391','http://[::1]:4391','https://preview.example.com']){
-    const built=await buildExtension({origin,outDir:join(dir,new URL(origin).hostname)}),files=readZip(await readFile(built.zip));
+  const origins=[DEVELOPMENT_ORIGIN,'http://127.0.0.1:4391','http://localhost:4391','http://[::1]:4391','https://preview.example.com'];
+  for(const [index,origin] of origins.entries()){
+    // Hostnames such as [::1] are valid origins but invalid Windows directory names.
+    const built=await buildExtension({origin,outDir:join(dir,`origin-${index}`)}),files=readZip(await readFile(built.zip));
     const manifest=JSON.parse(files.get('manifest.json'));assert.deepEqual(manifest.host_permissions,[`${origin}/*`]);
     assert.deepEqual(manifest.content_scripts.find(script=>script.js.includes('demo-bridge.js')).matches,[`${origin}/*`]);
     assert.match(files.get('site-config.js').toString(),new RegExp(origin.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
