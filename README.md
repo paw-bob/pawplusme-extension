@@ -6,7 +6,8 @@ An animated companion for Chrome, made from your photo. It watches your pointer,
 follows you across ordinary web pages, naps, reacts to typing and brings a playful
 reminder when your focus timer ends.
 
-**[Try the live demo or create your pet](https://www.pawplusme.com/?utm_source=github&utm_medium=referral&utm_campaign=opensource)** ·
+**[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/cpbchgpadbddcgodcjfcokcijhbbegpk)** ·
+[Try the live demo or create your pet](https://www.pawplusme.com/?utm_source=github&utm_medium=referral&utm_campaign=opensource) ·
 [How it works](https://www.pawplusme.com/how-it-works) ·
 [Pricing](https://www.pawplusme.com/pricing)
 
@@ -38,11 +39,15 @@ extension from appearing.
 
 ## Install
 
-For the current official installation instructions, visit
-[PawPlusMe's installation guide](https://www.pawplusme.com/how-it-works#install).
-GitHub releases and Chrome Web Store publication are separate release channels.
+Install **[PawPlusMe · Pet Companion from the Chrome Web Store](https://chromewebstore.google.com/detail/cpbchgpadbddcgodcjfcokcijhbbegpk)**,
+then open PawPlusMe in the same Chrome profile to create or recover your pet and
+bring it into the extension. The website also has the current
+[installation and pickup guide](https://www.pawplusme.com/how-it-works#install).
 
-To load a GitHub release manually:
+The Chrome Web Store and GitHub releases are separate release channels and may
+carry different version numbers.
+
+To load a GitHub release manually for development or review:
 
 1. Download [pawplusme-extension-0.6.12.zip](https://github.com/paw-bob/pawplusme-extension/releases/download/v0.6.12/pawplusme-extension-0.6.12.zip)
    and extract it to a permanent folder.
@@ -121,8 +126,8 @@ claim links, recovery links or photographs to public issues.
 Release archives contain `manifest.json` at their root. Releases include SHA256
 checksums, the shared runtime bundle and a portable source bundle for consumers
 that build against their own website origin. Source tags, GitHub releases and
-Chrome Web Store releases should be matched explicitly; a GitHub release does not
-mean that Chrome Web Store review has completed.
+Chrome Web Store releases should be matched explicitly; publishing a GitHub
+release does not mean that the same version has completed Chrome Web Store review.
 
 Browse [all GitHub releases](https://github.com/paw-bob/pawplusme-extension/releases)
 for versioned downloads and checksums.
