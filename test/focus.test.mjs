@@ -7,6 +7,17 @@ const scope=vm.createContext({...configGlobals(),});
 vm.runInContext(await readFile(new URL('../dist/extension/pet-focus.js',import.meta.url),'utf8'),scope);
 const {PetFocus:F}=scope,now=new Date(2026,10,1,12).getTime();
 
+test('closing a caught round stops only that round and remains off after storage restore',()=>{
+  const caught=F.transition(F.transition(null,{type:'preview'},now),{type:'catch',cycle:now},now);
+  const closed=F.transition(caught,{type:'stop',cycle:caught.cycle},now+1);
+  assert.equal(closed.phase,'off');assert.equal(F.deadline(closed),0);
+  let saved=JSON.stringify(closed);
+  assert.equal(F.restore({getItem:()=>saved,setItem:(_key,value)=>saved=value},'focus',now+1000).phase,'off');
+  const waiting=F.transition(closed,{type:'start'},now+2000);
+  assert.deepEqual(F.transition(waiting,{type:'stop',cycle:caught.cycle},now+3000),waiting,'a stale close must not cancel a new timer');
+  assert.equal(F.transition(waiting,{type:'stop'},now+3000).phase,'off','explicit Turn off timer still stops any timer');
+});
+
 test('starts a real 25-minute deadline and restores elapsed time without restarting it',()=>{
   const state=F.transition(null,{type:'start'},now);
   assert.equal(state.dueAt,now+25*60_000);assert.equal(F.clock(state,now),'25:00');

@@ -50,6 +50,7 @@ test('development and preview configurations use one generated origin throughout
 test('source release builds standalone without private files or checkout',async t=>{
   const dir=await temporary(t),built=await buildExtension({outDir:join(dir,'original'),sourceCommit:'release-commit'}),source=readZip(await readFile(built.sourceZip));
   assert.ok(source.has('scripts/build.mjs'));assert.ok(source.has('LICENSE'));assert.ok(source.has('THIRD_PARTY_NOTICES.md'));
+  assert.deepEqual(JSON.parse(source.get('package.json')).scripts,{build:'node scripts/build.mjs','build:dev':'node scripts/build.mjs --dev'});
   for(const [name,bytes]of source){assert.doesNotMatch(name,/(?:^|\/)(?:test|cloud|data|\.env|\.git)(?:\/|$)/);const file=join(dir,'source',name);await mkdir(dirname(file),{recursive:true});await writeFile(file,bytes);}
   const {buildExtension:portableBuild}=await import(pathToFileURL(join(dir,'source/scripts/build.mjs')).href);
   const rebuilt=await portableBuild({outDir:join(dir,'rebuilt'),sourceCommit:'release-commit'});

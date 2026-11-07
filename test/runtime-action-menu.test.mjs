@@ -6,6 +6,8 @@ import {readFile} from 'node:fs/promises';
 
 const runtimeSource=await readFile(new URL('../dist/extension/pet-runtime.js',import.meta.url),'utf8');
 const geometrySource=await readFile(new URL('../dist/extension/pet-geometry.js',import.meta.url),'utf8');
+const focusSource=await readFile(new URL('../dist/extension/pet-focus.js',import.meta.url),'utf8');
+const focusContext=vm.createContext({});vm.runInContext(focusSource,focusContext);
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 
 function fixture({width=1200,height=900,position={x:200,y:200},onModeChange,onFocusChoice,onHide}={}){
@@ -153,25 +155,36 @@ test('menu placement stays inside narrow viewport edges and destruction removes 
 });
 
 
-test('closing a caught reminder dismisses the panel without choosing or changing the timer',()=>{
-  const s=fixture(),state={phase:'caught',cycle:9,dueAt:0,quietUntil:0};
+test('closing a caught reminder persists off, unlocks Follow and Nap, and does not reopen after reload',async()=>{
+  let state={phase:'caught',cycle:9,dueAt:0,quietUntil:0},s;
+  s=fixture({onFocusChoice:event=>{state=structuredClone(focusContext.PetFocus.transition(state,event));s.app.setFocusState(state);}});
   s.app.setFocusState(state);assert.equal(s.app.focusPanel.style.display,'block');
   assert.equal(s.app.focusClose.getAttribute('aria-label'),'关闭');
-  s.fire(s.app.focusClose,'click',{target:s.app.focusClose});
-  assert.equal(s.app.focusPanel.style.display,'none');assert.equal(s.app.focusState,state);
-  assert.deepEqual(s.focusEvents,[]);assert.equal(s.document.activeElement,s.app.canvas);
-  for(let i=0;i<5;i++){s.app.setFocusState({...state});s.app.syncVisibility();}
-  s.document.focused=false;s.fire('window','blur');s.document.focused=true;s.fire('window','focus');
-  assert.equal(s.app.focusPanel.style.display,'none','clock and visibility refresh must not reopen a dismissed round');
-  assert.deepEqual(s.focusEvents,[]);
+  await Promise.all(s.fire(s.app.focusClose,'click',{target:s.app.focusClose}).results);
+  assert.equal(s.app.focusPanel.style.display,'none');assert.equal(state.phase,'off');
+  assert.deepEqual(s.focusEvents,[{type:'stop',cycle:9}]);assert.equal(s.document.activeElement,s.app.canvas);assert.equal(s.shown(),false);
+  s.app.setMode('follow');s.hover({clientX:1100,clientY:800});s.advance(50,{paint:true});assert.equal(s.app.state,'run');
+  s.app.setMode('sleep');s.advance(50,{paint:true});assert.equal(s.app.state,'sleep');
+  const reloaded=fixture();reloaded.app.setFocusState(JSON.parse(JSON.stringify(state)));reloaded.advance(50,{paint:true});
+  assert.equal(reloaded.app.focusPanel.style.display,'none');assert.notEqual(reloaded.app.state,'caught');
 });
 
 test('a later reminder round opens normally after the previous panel was closed',async()=>{
-  const s=fixture();s.app.setFocusState({phase:'caught',cycle:9});
-  s.fire(s.app.focusClose,'click',{target:s.app.focusClose});
+  let s;s=fixture({onFocusChoice:event=>s.app.setFocusState(focusContext.PetFocus.transition(s.app.focusState,event))});s.app.setFocusState({phase:'caught',cycle:9});
+  await Promise.all(s.fire(s.app.focusClose,'click',{target:s.app.focusClose}).results);
   s.app.setFocusState({phase:'waiting',cycle:10});
   s.app.setFocusState({phase:'mischief',cycle:10});s.app.setFocusState({phase:'caught',cycle:10});
   assert.equal(s.app.focusPanel.style.display,'block');assert.equal(s.document.activeElement,s.app.focusButtons[0]);
   await Promise.all(s.fire(s.app.focusButtons[0],'click',{target:s.app.focusButtons[0]}).results);
-  assert.deepEqual(s.focusEvents,[{type:'later25',cycle:10}]);
+  assert.deepEqual(s.focusEvents,[{type:'stop',cycle:9},{type:'later25',cycle:10}]);
+});
+
+test('closing waits for storage, blocks duplicate choices and leaves a retryable panel when storage fails',async()=>{
+  let reject;const response=new Promise((_resolve,fail)=>reject=fail),s=fixture({onFocusChoice:()=>response});s.app.setFocusState({phase:'caught',cycle:7});
+  const close=Promise.all(s.fire(s.app.focusClose,'click',{target:s.app.focusClose}).results);close.catch(()=>{});await flush();
+  assert.equal(s.app.focusClose.disabled,true);assert.equal(s.app.focusPanel.style.display,'block');
+  const again=s.fire(s.app.focusClose,'click',{target:s.app.focusClose});await Promise.all(again.results);assert.equal(s.focusEvents.length,1);
+  reject(Error('storage unavailable'));await close;
+  assert.equal(s.app.focusPanel.style.display,'block');assert.equal(s.app.focusState.phase,'caught');assert.equal(s.app.focusClose.disabled,false);
+  assert.equal(s.app.focusCopy.getAttribute('role'),'alert');
 });

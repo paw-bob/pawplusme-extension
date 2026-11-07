@@ -19,7 +19,10 @@
   function transition(input,event,now=Date.now()){
     const state=advance(input,now);
     if(event.type==='start')return waiting(25,now);
-    if(event.type==='stop')return empty();
+    if(event.type==='stop'){
+      if(event.cycle!==undefined&&(state.phase!=='caught'||event.cycle!==state.cycle))return state;
+      return empty();
+    }
     if(event.type==='preview')return {phase:'mischief',dueAt:now,quietUntil:0,cycle:now};
     if(event.type==='tick')return state;
     if(event.cycle!==state.cycle)return state;
