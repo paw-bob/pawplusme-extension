@@ -55,7 +55,9 @@ export async function buildExtension({origin=DEFAULT_ORIGIN,outDir=join(ROOT,'di
   const zip=join(output,`pawplusme-extension-${version}.zip`),runtimeZip=join(output,`pawplusme-runtime-${version}.zip`),sourceZip=join(output,`pawplusme-source-${version}.zip`);
   const sourceFiles=new Map();
   for(const sub of ['src','assets'])for(const [name,bytes]of await tree(join(ROOT,sub),`${sub}/`))sourceFiles.set(name,bytes);
-  for(const name of ['scripts/build.mjs','scripts/zip.mjs','package.json','LICENSE','THIRD_PARTY_NOTICES.md']){
+  const sourcePackage={...pkg,scripts:{build:pkg.scripts.build,'build:dev':pkg.scripts['build:dev']}};
+  sourceFiles.set('package.json',Buffer.from(JSON.stringify(sourcePackage,null,2)+'\n'));
+  for(const name of ['scripts/build.mjs','scripts/zip.mjs','LICENSE','THIRD_PARTY_NOTICES.md']){
     sourceFiles.set(name,await readFile(join(ROOT,name)));
   }
   const artifacts=new Map([[zip,createZip(extensionFiles)],[runtimeZip,createZip(runtimeFiles)],[sourceZip,createZip(sourceFiles)]]);
